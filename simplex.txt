@@ -1,0 +1,79 @@
+% Simplex
+
+% Input Parameters
+C=[a b c]
+info=[a b c;a b c;a b c]
+b=[a b c]
+NoVariables=size(info, 2)
+s=eye(size(info, 1))
+A=[info s  b]
+Cost=zeros(1,size(A,2))
+Cost(1:NoVariables)=C
+BV=NoVariables+1:size(A,2)-1
+
+% Calculate Z-Row(Zj-Cj)
+ZRow=Cost(BV)*A-Cost
+
+% To print the table
+ZjCj=[ZRow; A]
+SimpTable=array2table(ZjCj)
+SimpTable.Properties.VariableNames(1:size(ZjCj,2))={'x_1','x_2','x_3','s_1','s_2','s_3','sol'}
+
+% Simplex table starts
+Run=true
+while Run
+if any(ZRow<0) % For checking any negative values
+	fprintf('Current BFS is not optimal.\n')
+
+	% To find entering variable
+	ZC=ZRow(1:end-1)
+	[EnterCol, Pvt_Col]=min(ZC) % EnterCol contains the most negative number and Pvt_Col contains column number
+	
+	% To find leaving variable
+	sol=A(:,end)
+	Column=A(:,Pvt_Col)
+	if all(Column<=0)
+		error('LPP has unbounded solution')
+	else
+	
+		% Find ratios with positive values of Pvt_Col
+		for i=1:size(Column,1)
+			if Column(i)>0
+				ratio(i)=sol(i)./Column(i)
+			else
+				ratio(i)=inf
+			end
+		end
+		
+		% Find min ratio
+		[MinRatio, Pvt_Row]=min(ratio)
+	end
+	BV(Pvt_Row)=Pvt_Col
+
+	% Pivot Key
+	Pvt_Key=A(Pvt_Row,Pvt_Col)
+	
+	A(Pvt_Row,:)=A(Pvt_Row,:)./Pvt_Key
+	for i=1:size(A,1)
+		if i~=Pvt_Row
+			A(i,:)=A(i,:)-A(i,Pvt_Col).*A(Pvt_Row,:)
+		end
+		ZRow=ZRow-ZRow(Pvt_Col).*A(Pvt_Row,:)
+
+		% To print the updated table
+		ZjCj=[ZRow;A]
+		SimpTable=array2table(ZjCj)
+		SimpTable.Properties.VariableNames(1:size(ZjCj,2))={'x_1','x_2','x_3','s_1','s_2','s_3','sol'}
+		BFS=zeros(1,size(A,2))
+		BFS(BV)=A(:,end)
+		BFS(end)=sum(BFS.*Cost)
+		CurrentBFS=array2table(BFS)
+		CurrentBFS.Properties.VariableNames(1:size(CurrentBFS,2))={'x_1','x_2','x_3','s_1','s_2','s_3','sol'}
+	end
+else
+	Run=false
+	fprintf('Current BFS is optimal and optimality has reached.\n')
+end
+end
+
+	
